@@ -17,3 +17,6 @@ simplejson==3.17.0
 python-memcached==1.59
 cachelib==0.1.1
 # Misc
+lxml==4.6.1
+cssselect==1.1.0
+BeautifulSoup4==4.9.3
