@@ -10,26 +10,13 @@ services:
     container_name: webcrawler
     depends_on:
       - webcrawler-mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=123123
-      - THREADS=1
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=123123
-      - MYSQL_HOST=webcrawler-mysql
-      - MYSQL_PORT=3306
-      - MYSQL_SCHEME=lifestyle
-      - MYSQL_LOG_QUERIES=0
-      - LOGGER_LEVEL=info
-      - LOG_CURL_REQUESTS=0
-      - DEBUG_MODE=0
+    env_file:
+      - .env
     volumes:
       - ./attachments/scripts/waitforit:/tmp/waitforit
-    dns:
-      - 62.219.21.63
-      - 8.8.8.8
-      - 4.4.4.4
     command: sh -c "
       /tmp/waitforit -timeout 30 -address tcp://webcrawler-mysql:3306 &&
+      /tmp/waitforit -timeout 30 -address tcp://webcrawler-memcached:11211 &&
       python3 -m webcrawler"
 
   webcrawler-mysql:
@@ -37,16 +24,21 @@ services:
     container_name: webcrawler-mysql
     environment:
       MYSQL_ROOT_PASSWORD: 123123
+      MYSQL_DATABASE: webcrawler
     ports:
       - 3309:3306
-    volumes:
-      - ./data/mysql:/var/lib/mysql
-      - ./attachments/mysql/custom.cnf:/etc/mysql/conf.d/custom.cnf
-      - ./attachments/mysql/dump.sql.gz:/docker-entrypoint-initdb.d/dump.sql.gz
+#    volumes:
+#      - ./attachments/mysql/dump.sql.gz:/docker-entrypoint-initdb.d/dump.sql.gz
     cap_add:
       - SYS_NICE  # CAP_SYS_NICE
-    restart: always
-    command: ['mysqld','--character-set-server=utf8','--default-authentication-plugin=mysql_native_password']
+    command: ['mysqld','--character-set-server=UTF8MB4','--default-authentication-plugin=mysql_native_password', '--performance-schema=off']
+
+  webcrawler-memcached:
+    image: memcached:1.6.6-alpine
+    container_name: webcrawler-memcached
+    ports:
+      - 11211:11211
+    command: ["memcached", "-m", "1024M", "-c","32768","-I","10M"]
 
   webcrawler-phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -66,4 +58,5 @@ services:
     depends_on:
       - webcrawler-mysql
       - webcrawler-phpmyadmin
+      - webcrawler-memcached
     command: sh -c "echo start"

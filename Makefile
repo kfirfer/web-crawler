@@ -15,6 +15,5 @@ services: server.services ## Start main services
 logs: server.logs  ## Display server logs
 
 include attachments/makefiles/server.mk
-include attachments/makefiles/databases.mk
 include attachments/makefiles/help.mk
-include attachments/makefiles/helm-charts.mk
+

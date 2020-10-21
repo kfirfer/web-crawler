@@ -1,25 +1,25 @@
+# -*- coding: utf-8 -*-
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 from webcrawler.loggings.logger import logger
-from webcrawler.util.mailer import Mailer
+from webcrawler.service.webcrawler import start_crawl
 
 log = logger('webcrawler')
-mailer = Mailer()
 
 
 def run():
     threads = int(os.environ["THREADS"])
     executor = ThreadPoolExecutor(max_workers=threads)
-    for i in range(0, threads):
+    for _ in range(0, threads):
         executor.submit(run_thread)
 
 
 def run_thread():
     while True:
         try:
-            log.info("bla")
+            start_crawl()
         except Exception as e:
             log.exception(e)
             log.info("Sleep for 60 seconds")

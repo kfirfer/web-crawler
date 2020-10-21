@@ -4,15 +4,18 @@ import os
 import sys
 import traceback
 import warnings
+from time import sleep
 
 from sqlalchemy import create_engine
 from sqlalchemy import exc as sa_exc
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm.query import Query as _Query
 
-from webcrawler.model import db
+from webcrawler.config.mysql import db
 
 echo = False
 if 'MYSQL_LOG_QUERIES' in os.environ and os.environ["MYSQL_LOG_QUERIES"] == "1":
@@ -24,9 +27,34 @@ uri = "mysql://{}:{}@{}:{}/{}?use_unicode=1&charset=utf8mb4".format(os.environ["
                                                                     os.environ["MYSQL_PORT"],
                                                                     os.environ["MYSQL_SCHEME"])
 
+MAX_RETRY_COUNT = 0
+if "MYSQL_QUERY_MAX_RETRY_COUNT" in os.environ:
+    MAX_RETRY_COUNT = int(os.environ["MYSQL_QUERY_MAX_RETRY_COUNT"])
+
+
+class RetryingQuery(_Query):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def __iter__(self):
+        attempts = 0
+        while True:
+            try:
+                return super().__iter__()
+            except OperationalError:
+                attempts += 1
+                if attempts <= MAX_RETRY_COUNT:
+                    sleep_for = 2 ** (attempts - 1)
+                    sleep(sleep_for)
+                    continue
+                else:
+                    raise
+
+
 engine = create_engine(uri, pool_pre_ping=True,
                        pool_size=100, max_overflow=0, echo=echo)
-session = scoped_session(sessionmaker(autocommit=True, bind=engine))
+session = scoped_session(sessionmaker(autocommit=True, bind=engine, query_cls=RetryingQuery))
 
 
 class SqlBase(object):

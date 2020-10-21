@@ -13,3 +13,7 @@ pyopenssl==19.1.0
 selenium==3.141.0
 mobilenium==0.0.4
 simplejson==3.17.0
+# Cache
+python-memcached==1.59
+cachelib==0.1.1
+# Misc

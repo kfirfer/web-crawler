@@ -23,9 +23,6 @@ class CustomJSONLog(logging.Formatter):
     def __init__(self):
         super().__init__()
         self.f = logging.Formatter('%(asctime)s - %(levelname)s - %(msg)s')
-        if "ELASTICSEARCH_MONITOR_HOSTS" in os.environ and os.environ["ELASTICSEARCH_MONITOR_HOSTS"] != "":
-            from webcrawler.loggings.elasticsearch_shoveler import ElasticSearchLogger
-            self.elastic_search_logger = ElasticSearchLogger()
 
     def get_exc_fields(self, record):
         if record.exc_info:
