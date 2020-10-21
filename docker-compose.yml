@@ -1,0 +1,69 @@
+version: '3.7'
+
+services:
+  webcrawler:
+    image: webcrawler:latest
+    build:
+      context: .
+      cache_from:
+        - webcrawler:latest
+    container_name: webcrawler
+    depends_on:
+      - webcrawler-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=123123
+      - THREADS=1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=123123
+      - MYSQL_HOST=webcrawler-mysql
+      - MYSQL_PORT=3306
+      - MYSQL_SCHEME=lifestyle
+      - MYSQL_LOG_QUERIES=0
+      - LOGGER_LEVEL=info
+      - LOG_CURL_REQUESTS=0
+      - DEBUG_MODE=0
+    volumes:
+      - ./attachments/scripts/waitforit:/tmp/waitforit
+    dns:
+      - 62.219.21.63
+      - 8.8.8.8
+      - 4.4.4.4
+    command: sh -c "
+      /tmp/waitforit -timeout 30 -address tcp://webcrawler-mysql:3306 &&
+      python3 -m webcrawler"
+
+  webcrawler-mysql:
+    image: mysql:8.0.21
+    container_name: webcrawler-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 123123
+    ports:
+      - 3309:3306
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./attachments/mysql/custom.cnf:/etc/mysql/conf.d/custom.cnf
+      - ./attachments/mysql/dump.sql.gz:/docker-entrypoint-initdb.d/dump.sql.gz
+    cap_add:
+      - SYS_NICE  # CAP_SYS_NICE
+    restart: always
+    command: ['mysqld','--character-set-server=utf8','--default-authentication-plugin=mysql_native_password']
+
+  webcrawler-phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: webcrawler-phpmyadmin
+    environment:
+      - PMA_HOST=webcrawler-mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=123123
+    ports:
+      - 8996:80
+    depends_on:
+      - webcrawler-mysql
+
+  webcrawler-main-services:
+    image: alpine
+    container_name: webcrawler-main-services
+    depends_on:
+      - webcrawler-mysql
+      - webcrawler-phpmyadmin
+    command: sh -c "echo start"
