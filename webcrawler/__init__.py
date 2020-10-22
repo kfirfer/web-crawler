@@ -14,4 +14,9 @@ os.environ["MYSQL_SCHEME"] = os.getenv("MYSQL_SCHEME", "webcrawler")
 os.environ["JSON_LOG_CONSOLE"] = os.getenv("JSON_LOG_CONSOLE", "0")
 os.environ["MEMCACHED_HOSTS"] = os.getenv("MEMCACHED_HOSTS", "127.0.0.1:11211")
 
+os.environ["RABBITMQ_USER"] = os.getenv("RABBITMQ_USER", "admin")
+os.environ["RABBITMQ_HOST"] = os.getenv("RABBITMQ_HOST", "127.0.0.1")
+os.environ["RABBITMQ_PASSWORD"] = os.getenv("RABBITMQ_PASSWORD", "admin")
+os.environ["RABBITMQ_EXCHANGE"] = os.getenv("RABBITMQ_EXCHANGE", "exchange")
+
 os.environ["DEBUG_MODE"] = os.getenv("DEBUG_MODE", "1")

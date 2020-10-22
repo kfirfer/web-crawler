@@ -33,6 +33,18 @@ services:
       - SYS_NICE  # CAP_SYS_NICE
     command: ['mysqld','--character-set-server=UTF8MB4','--default-authentication-plugin=mysql_native_password', '--performance-schema=off']
 
+  webcrawler-rabbitmq:
+    image: rabbitmq:3.8.2-management
+    container_name: webcrawler-rabbitmq
+    hostname: rabbitmq
+    ports:
+      - 15672:15672
+      - 5672:5672
+    volumes:
+      - ./attachments/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+      - ./attachments/rabbitmq/rabbitmq.config:/etc/rabbitmq/rabbitmq.config
+    command: bash -c "rabbitmq-plugins enable --offline rabbitmq_management rabbitmq_federation_management rabbitmq_mqtt rabbitmq_stomp rabbitmq_shovel rabbitmq_shovel_management rabbitmq_peer_discovery_k8s && rabbitmq-server"
+
   webcrawler-memcached:
     image: memcached:1.6.6-alpine
     container_name: webcrawler-memcached
@@ -59,4 +71,5 @@ services:
       - webcrawler-mysql
       - webcrawler-phpmyadmin
       - webcrawler-memcached
+      - webcrawler-rabbitmq
     command: sh -c "echo start"

@@ -1,39 +1,53 @@
 # -*- coding: utf-8 -*-
+from urllib.parse import urlparse
+
 import requests
 from bs4 import BeautifulSoup
 from bs4.dammit import EncodingDetector
 
 from webcrawler.config.memcached.memcached import Memcached
 from webcrawler.loggings.logger import logger
+from webcrawler.service.rabbitmq import push
 
 log = logger(__name__)
 memcached = Memcached()
 _listOfCrawled = set()
+_domains = set()
 _index = []
 
 
 def start_crawl():
-    crawl("https://www.wikipedia.org/", 2)
-    # links_from_text("https://www.wikipedia.org/")
+    # crawl("https://keycloak.tatzan.com/auth/", 1)
+    doc = {
+        "bla": "blabla"
+    }
+    push(doc)
+
+
+def print_domains(links):
+    for link in links:
+        domain = urlparse(link).netloc
+        log.info(domain)
 
 
 def crawl(url, depth_to_go):
     _listOfCrawled.add(url)
     text = text_from_url(url)
-    print(text)
-    links = links_from_text(url)
+    log.info(url)
+    links = links_from_url(url)
+    print_domains(links)
     if depth_to_go > 0:
         for i in links:
             if i not in _listOfCrawled:
                 crawl(i, depth_to_go - 1)
 
 
-def links_from_text(url):
+def links_from_url(url):
     headers = {
         "Content-Type": "text/plain"
     }
     resp = requests.get(url=url, timeout=30, headers=headers)
-    parser = 'html.parser'  # or 'lxml' (preferred) or 'html5lib', if installed
+    parser = 'html.parser'
     http_encoding = resp.encoding if 'charset' in resp.headers.get('content-type', '').lower() else None
     html_encoding = EncodingDetector.find_declared_encoding(resp.content, is_html=True)
     encoding = html_encoding or http_encoding
@@ -49,7 +63,7 @@ def links_from_text(url):
 
 def text_from_url(url):
     headers = {
-        "Content-Type": "text/plain"
+        "Accept": "text/html"
     }
-    resp = requests.get(url=url, timeout=30, headers=headers)
-    return resp.text
+    response = requests.get(url=url, timeout=30, headers=headers)
+    return response.text

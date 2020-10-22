@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime
+import json
 
 
 class Singleton(type):
@@ -18,3 +19,8 @@ def iso_format(dt):
         utc = dt
     iso_string = datetime.strftime(utc, '%Y-%m-%dT%H:%M:%S.{:03}Z')
     return iso_string.format(int(round(utc.microsecond / 1000.0)))
+
+
+def to_json(item):
+    json_str = json.dumps(item, ensure_ascii=False)
+    return json_str
