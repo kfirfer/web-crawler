@@ -1,92 +1,40 @@
 import os
 
-import requests
-import time
 import curlify
+import requests
+from bs4 import BeautifulSoup
+from bs4.dammit import EncodingDetector
 
+from webcrawler.config.memcached.memcached import Memcached
 from webcrawler.loggings.logger import logger
 
-log = logger()
+log = logger(__name__)
 
 print_curl = False
 if "LOG_CURL_REQUESTS" in os.environ and os.environ['LOG_CURL_REQUESTS'] == "1":
     print_curl = True
 
+memcached = Memcached()
 
-def request_post(url, payload, headers, timeout, s=None, params=None):
+
+def links_from_url(url, cache=False, headers=None):
     response = None
-    for i in range(0, 3):
-        try:
-            if s:
-                response = s.request("POST", url, data=payload, headers=headers, timeout=timeout, params=params)
-            else:
-                response = requests.request("POST", url, data=payload, headers=headers, timeout=timeout, params=params)
-            if print_curl:
-                log.debug(curlify.to_curl(response.request))
-            break
-        except:
-            if i == 2:
-                raise
-            time.sleep(1)
-
-    return response
-
-
-def request_get(url, headers, timeout, s=None, params=None):
-    response = None
-    for i in range(0, 3):
-        try:
-            if s:
-                response = s.request("GET", url, headers=headers, timeout=timeout, params=params)
-            else:
-                response = requests.request("GET", url, headers=headers, timeout=timeout, params=params)
-            if print_curl:
-                log.debug(curlify.to_curl(response.request))
-            break
-        except:
-            if i == 2:
-                raise
-            time.sleep(1)
-
-    return response
-
-
-def http_get(url, headers=None, timeout=30, proxy=None, parse_json=False, params=None):
-    if proxy:
-        proxies = {
-            'http': proxy,
-            'https': proxy,
-        }
-        s = requests.Session()
-        s.proxies = proxies
-        response = request_get(url, headers, timeout, s=s, params=params)
-    else:
-        response = request_get(url, headers, timeout, s=None, params=params)
-    if response and parse_json:
-        try:
-            return response.json()
-        except:
-            log.error("Parse Response JSON error", response=response.text, url=url)
-            return None
-    return response
-
-
-def http_post(url, payload, headers=None, timeout=30, proxy=None, parse_json=False, params=None):
-    if proxy:
-        proxies = {
-            'http': proxy,
-            'https': proxy,
-        }
-        s = requests.Session()
-        s.proxies = proxies
-        response = request_post(url, payload, headers, timeout, s, params=params)
-    else:
-        response = request_post(url, payload, headers, timeout, params=params)
-
-    if response and parse_json:
-        try:
-            return response.json()
-        except:
-            log.error("Parse Response JSON error", response=response.text, url=url)
-            return None
-    return response
+    if cache:
+        response = memcached.get(url)
+    if response is None:
+        response = requests.get(url=url, timeout=30, headers=headers)
+        if print_curl:
+            log.debug(curlify.to_curl(response.request))
+        memcached.set(url, response)
+    parser = 'html.parser'
+    http_encoding = response.encoding if 'charset' in response.headers.get('content-type', '').lower() else None
+    html_encoding = EncodingDetector.find_declared_encoding(response.content, is_html=True)
+    encoding = html_encoding or http_encoding
+    soup = BeautifulSoup(response.content, parser, from_encoding=encoding)
+    links = set()
+    for link in soup.find_all('a', href=True):
+        href = link['href']
+        if "http" not in href:
+            continue
+        links.add(href)
+    return links

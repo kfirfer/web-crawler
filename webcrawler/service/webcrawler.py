@@ -1,69 +1,80 @@
 # -*- coding: utf-8 -*-
+import json
+import os
+import threading
 from urllib.parse import urlparse
 
-import requests
-from bs4 import BeautifulSoup
-from bs4.dammit import EncodingDetector
+import pika
 
-from webcrawler.config.memcached.memcached import Memcached
 from webcrawler.loggings.logger import logger
+from webcrawler.repository.sites import update_ratio, get_next_sites
 from webcrawler.service.rabbitmq import push
+from webcrawler.util.webreader import links_from_url
 
 log = logger(__name__)
-memcached = Memcached()
-_listOfCrawled = set()
-_domains = set()
-_index = []
+
+CREDENTIALS = pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
+RABBITMQ_HOST = os.environ["RABBITMQ_HOST"]
+HEADERS = {
+    "Accept": "text/html"
+}
 
 
 def start_crawl():
-    # crawl("https://keycloak.tatzan.com/auth/", 1)
-    doc = {
-        "bla": "blabla"
-    }
-    push(doc)
+    for _ in range(0, 10):
+        thread = threading.Thread(target=listening_to_queue)
+        thread.setDaemon(True)
+        thread.start()
+
+    sites = get_next_sites()
+    for site in sites:
+        url = site.url
+        domain = urlparse(url).netloc
+        doc = {
+            "id": site.id,
+            "domain": domain,
+            "url": url,
+            "depth": site.depth,
+            "counter_same_domain": -1,
+            "counter_number_of_urls": 0
+        }
+        push(doc)
 
 
-def print_domains(links):
+def listening_to_queue():
+    while True:
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=CREDENTIALS))
+        channel = connection.channel()
+        channel.basic_consume(consumer_callback=parse, queue='ml')
+        channel.start_consuming()
+
+
+def finished_crawl_the_end_node(doc):
+    update_ratio(doc["id"], doc["counter_same_domain"], doc["counter_number_of_urls"])
+
+
+def parse(ch, method, properties, body):
+    log.info("Item consumed")
+    doc = json.loads(body)
+    url = doc["url"]
+    doc["depth"] = doc["depth"] - 1
+    domain = doc["domain"]
+    doc["counter_number_of_urls"] = doc["counter_number_of_urls"] + 1
+
+    current_domain = urlparse(url).netloc
+    if domain == current_domain:
+        doc["counter_same_domain"] += 1
+    if doc["depth"] < 0:
+        finished_crawl_the_end_node(doc)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
+    links = links_from_url(url, cache=True, headers=HEADERS)
+    if len(links) == 0:
+        finished_crawl_the_end_node(doc)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
     for link in links:
-        domain = urlparse(link).netloc
-        log.info(domain)
-
-
-def crawl(url, depth_to_go):
-    _listOfCrawled.add(url)
-    text = text_from_url(url)
-    log.info(url)
-    links = links_from_url(url)
-    print_domains(links)
-    if depth_to_go > 0:
-        for i in links:
-            if i not in _listOfCrawled:
-                crawl(i, depth_to_go - 1)
-
-
-def links_from_url(url):
-    headers = {
-        "Content-Type": "text/plain"
-    }
-    resp = requests.get(url=url, timeout=30, headers=headers)
-    parser = 'html.parser'
-    http_encoding = resp.encoding if 'charset' in resp.headers.get('content-type', '').lower() else None
-    html_encoding = EncodingDetector.find_declared_encoding(resp.content, is_html=True)
-    encoding = html_encoding or http_encoding
-    soup = BeautifulSoup(resp.content, parser, from_encoding=encoding)
-    links = set()
-    for link in soup.find_all('a', href=True):
-        href = link['href']
-        if "http" not in href:
-            continue
-        links.add(href)
-    return links
-
-
-def text_from_url(url):
-    headers = {
-        "Accept": "text/html"
-    }
-    response = requests.get(url=url, timeout=30, headers=headers)
-    return response.text
+        doc["url"] = link
+        push(doc)
+    ch.basic_ack(delivery_tag=method.delivery_tag)

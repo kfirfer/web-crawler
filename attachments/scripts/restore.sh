@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Example usage: ./scripts/restore.sh localhost 3307 root o74pe!n5Um2w
+# Example usage: ./scripts/restore.sh localhost 3309 root 123123
 HOST=$1
 PORT=$2
 USER=$3

@@ -12,17 +12,17 @@ from webcrawler.util.util import to_json
 log = logger(__name__)
 credentials = pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
 rabbitmq_host = os.environ["RABBITMQ_HOST"]
-queue = Queue(50000)
+queue = Queue(5000)
 
 
 def init():
     for _ in range(0, 5):
-        thread = threading.Thread(target=publishing_thread)
+        thread = threading.Thread(target=publishing)
         thread.setDaemon(True)
         thread.start()
 
 
-def publishing_thread():
+def publishing():
     while True:
         try:
             exception_count = 0

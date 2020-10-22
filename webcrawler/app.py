@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from webcrawler.loggings.logger import logger
 from webcrawler.service.webcrawler import start_crawl
 
-log = logger('webcrawler')
+log = logger(__name__)
 
 
 def run():
@@ -25,5 +25,5 @@ def run_thread():
             log.info("Sleep for 60 seconds")
             time.sleep(60)
         finally:
-            log.info("Sleep for 30 seconds")
-            time.sleep(30)
+            log.info("Sleep for 600 seconds")
+            time.sleep(600)

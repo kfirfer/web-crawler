@@ -10,6 +10,8 @@ services:
     container_name: webcrawler
     depends_on:
       - webcrawler-mysql
+      - webcrawler-memcached
+      - webcrawler-rabbitmq
     env_file:
       - .env
     volumes:
@@ -17,7 +19,8 @@ services:
     command: sh -c "
       /tmp/waitforit -timeout 30 -address tcp://webcrawler-mysql:3306 &&
       /tmp/waitforit -timeout 30 -address tcp://webcrawler-memcached:11211 &&
-      python3 -m webcrawler"
+      /tmp/waitforit -timeout 30 -address tcp://webcrawler-rabbitmq:5672 &&
+      python -m webcrawler"
 
   webcrawler-mysql:
     image: mysql:8.0.21
@@ -27,10 +30,10 @@ services:
       MYSQL_DATABASE: webcrawler
     ports:
       - 3309:3306
-#    volumes:
-#      - ./attachments/mysql/dump.sql.gz:/docker-entrypoint-initdb.d/dump.sql.gz
+    volumes:
+      - ./attachments/mysql/dump.sql:/docker-entrypoint-initdb.d/dump.sql
     cap_add:
-      - SYS_NICE  # CAP_SYS_NICE
+      - SYS_NICE
     command: ['mysqld','--character-set-server=UTF8MB4','--default-authentication-plugin=mysql_native_password', '--performance-schema=off']
 
   webcrawler-rabbitmq:
