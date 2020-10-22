@@ -10,8 +10,8 @@ from webcrawler.loggings.logger import logger
 from webcrawler.util.util import to_json
 
 log = logger(__name__)
-credentials = pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
-rabbitmq_host = os.environ["RABBITMQ_HOST"]
+CREDENTIALS = pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
+RABBITMQ_HOST = os.environ["RABBITMQ_HOST"]
 queue = Queue(5000)
 
 
@@ -27,7 +27,7 @@ def publishing():
         try:
             exception_count = 0
             connection = pika.BlockingConnection(
-                pika.ConnectionParameters(host=rabbitmq_host, credentials=credentials))
+                pika.ConnectionParameters(host=RABBITMQ_HOST, credentials=CREDENTIALS))
             channel = connection.channel()
             channel.confirm_delivery()
 
@@ -44,8 +44,8 @@ def publishing():
                     time.sleep(5)  # Avoid spamming
                     try:
                         connection = pika.BlockingConnection(
-                            pika.ConnectionParameters(host=rabbitmq_host,
-                                                      credentials=credentials))
+                            pika.ConnectionParameters(host=RABBITMQ_HOST,
+                                                      credentials=CREDENTIALS))
                         channel = connection.channel()
                         channel.confirm_delivery()
                         queue.put_nowait((exchange_name, routing_key, json_utf8))
@@ -72,7 +72,7 @@ def post(exchange_name, routing_key, json_utf8):
         queue.put((exchange_name, routing_key, json_utf8))
 
 
-def push(doc):
+def push_to_queue(doc):
     try:
         json_doc_string = to_json(doc)
         log.info("New item is going to the queue")

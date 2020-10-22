@@ -1,11 +1,23 @@
-# Run
-Run docker compose:
-```bash
-docker-compose up
-```
+#### Get started
 
-#### For debug
-Run `./debug.py`
+Run [main](./webcrawler/__main__.py) 
+
+#### Docker make commands
+
+You can display available make commands using `make`.
+
+While developing, you will probably rely mostly on `make services`; however, there are additional scripts at your disposal:
+
+| `make <script>`      | Description                                                                  |
+| -------------------- | ---------------------------------------------------------------------------- |
+| `help`               | Display available make commands                                              |
+| `start`              | Run all services.                                                            |
+| `stop`               | Stop all services.                                                           |
+| `remove`             | Stop & Remove volumes of all services.                                       |
+| `services`           | Run main services except the server.                                         |
+| `server.daemon`      | Run your local server in its own docker container as a daemon.               |
+
+
 
 # Troubleshooting
 For ubuntu You should install those packages:

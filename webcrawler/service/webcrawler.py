@@ -8,7 +8,7 @@ import pika
 
 from webcrawler.loggings.logger import logger
 from webcrawler.repository.sites import update_ratio, get_next_sites
-from webcrawler.service.rabbitmq import push
+from webcrawler.service.rabbitmq import push_to_queue
 from webcrawler.util.webreader import links_from_url
 
 log = logger(__name__)
@@ -38,7 +38,7 @@ def start_crawl():
             "counter_same_domain": -1,
             "counter_number_of_urls": 0
         }
-        push(doc)
+        push_to_queue(doc)
 
 
 def listening_to_queue():
@@ -76,5 +76,5 @@ def parse(ch, method, properties, body):
         return
     for link in links:
         doc["url"] = link
-        push(doc)
+        push_to_queue(doc)
     ch.basic_ack(delivery_tag=method.delivery_tag)
