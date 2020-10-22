@@ -25,5 +25,5 @@ def run_thread():
             log.info("Sleep for 60 seconds")
             time.sleep(60)
         finally:
-            log.info("Sleep for 600 seconds")
-            time.sleep(600)
+            log.info("Sleep for 60 seconds")
+            time.sleep(60)

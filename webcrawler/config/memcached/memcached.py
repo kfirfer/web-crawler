@@ -53,10 +53,12 @@ class Memcached(metaclass=Singleton):
         return prev_value
 
     def get(self, key):
-        if not key:
+        if not key or len(key) > 250:
             return None
         return self.client.get(key)
 
     def set(self, key, value, expire=3600):
+        if len(key) > 250:
+            return False
         self.client.set(key, value, timeout=expire)
         return True

@@ -2,13 +2,10 @@
 # ¯¯¯¯¯¯¯¯¯¯¯
 
 
-server.builder: ## Build builder (var: MAVEN_CENTRAL_PROXY)
-	docker-compose build webcrawler-builder
-
 server.build: ## Build server
 	docker-compose build webcrawler
 
-server.start: server.services ## Start server
+server.start: server.services server.build  ## Start server
 	docker-compose up webcrawler
 
 server.services: ## Start main services except the server (for development uses)

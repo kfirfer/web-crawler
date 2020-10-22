@@ -7,7 +7,7 @@ import pika
 from pika.exceptions import ChannelClosed, ConnectionClosed
 
 from webcrawler.loggings.logger import logger
-from webcrawler.util.util import to_json
+from webcrawler.util.util import marshal_to_json
 
 log = logger(__name__)
 CREDENTIALS = pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
@@ -74,8 +74,8 @@ def post(exchange_name, routing_key, json_utf8):
 
 def push_to_queue(doc):
     try:
-        json_doc_string = to_json(doc)
-        log.info("New item is going to the queue")
+        json_doc_string = marshal_to_json(doc)
+        log.debug("New item is going to the queue")
         post(os.environ["RABBITMQ_EXCHANGE"], "ml", json_doc_string)
         return True
     except Exception:

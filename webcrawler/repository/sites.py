@@ -29,3 +29,16 @@ def update_ratio(_id, counter_same_domain, counter_number_of_urls):
     ratio = counter_same_domain / counter_number_of_urls
     site.update(ratio=ratio, counter_number_of_urls=counter_number_of_urls, counter_same_domain=counter_same_domain)
     return site
+
+
+def get_sites():
+    sites = db.webcrawler.sites.query.all()
+    sites_objects = []
+    for site in sites:
+        sites_objects.append({
+            "id": site.id,
+            "url": site.url,
+            "ratio": site.ratio,
+            "depth": site.depth,
+        })
+    return sites_objects

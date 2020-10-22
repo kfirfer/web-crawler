@@ -21,6 +21,6 @@ def iso_format(dt):
     return iso_string.format(int(round(utc.microsecond / 1000.0)))
 
 
-def to_json(item):
+def marshal_to_json(item):
     json_str = json.dumps(item, ensure_ascii=False)
     return json_str

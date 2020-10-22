@@ -9,18 +9,23 @@ import pika
 from webcrawler.loggings.logger import logger
 from webcrawler.repository.sites import update_ratio, get_next_sites
 from webcrawler.service.rabbitmq import push_to_queue
+from webcrawler.service.stats_scheduler import start_print_stats_scheduler
+from webcrawler.util.util import marshal_to_json
 from webcrawler.util.webreader import links_from_url
 
 log = logger(__name__)
 
 CREDENTIALS = pika.PlainCredentials(os.environ["RABBITMQ_USER"], os.environ["RABBITMQ_PASSWORD"])
 RABBITMQ_HOST = os.environ["RABBITMQ_HOST"]
+PRINT_CRAWL_STATS = os.environ["PRINT_CRAWL_STATS"]
 HEADERS = {
     "Accept": "text/html"
 }
 
 
 def start_crawl():
+    if PRINT_CRAWL_STATS == "1":
+        start_print_stats_scheduler()
     for _ in range(0, 10):
         thread = threading.Thread(target=listening_to_queue)
         thread.setDaemon(True)
@@ -52,10 +57,10 @@ def listening_to_queue():
 
 def finished_crawl_the_end_node(doc):
     update_ratio(doc["id"], doc["counter_same_domain"], doc["counter_number_of_urls"])
+    log.info(marshal_to_json(doc))
 
 
 def parse(ch, method, properties, body):
-    log.info("Item consumed")
     doc = json.loads(body)
     url = doc["url"]
     doc["depth"] = doc["depth"] - 1
