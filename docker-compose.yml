@@ -23,7 +23,7 @@ services:
       python -m webcrawler"
 
   webcrawler-mysql:
-    image: mysql:8.0.21
+    image: mysql:8.0.22
     container_name: webcrawler-mysql
     environment:
       MYSQL_ROOT_PASSWORD: 123123
@@ -49,7 +49,7 @@ services:
     command: bash -c "rabbitmq-plugins enable --offline rabbitmq_management rabbitmq_federation_management rabbitmq_mqtt rabbitmq_stomp rabbitmq_shovel rabbitmq_shovel_management rabbitmq_peer_discovery_k8s && rabbitmq-server"
 
   webcrawler-memcached:
-    image: memcached:1.6.6-alpine
+    image: memcached:1.6.8-alpine
     container_name: webcrawler-memcached
     ports:
       - 11211:11211
